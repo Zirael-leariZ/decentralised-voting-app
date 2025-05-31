@@ -1,35 +1,80 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.30;
 
 import "forge-std/Script.sol";
-import "../src/VotingFactory.sol";
+import "../src/VotingRound.sol";
 
 contract DeployVotingRound is Script {
-
-	address constant VOTING_FACTORY = 0x0CB9D32609A1cE7E22eaA61Eba83F79aE000eAD2;
-	address constant EMAIL_PROVER = 0xBa4011B617DBc8cA774dd619C55a13765B81Dd62;
-	// Replace with the actual addresses of your VotingFactory and EmailAccessProver contracts
-
 	function run() external {
+		// Get deployment parameters from environment variables or set defaults
+		string memory voteName = vm.envOr("VOTE_NAME", string("Sample Vote"));
+		string memory emailDomain = vm.envOr("EMAIL_DOMAIN", string("example.com"));
+		uint256 durationInSeconds = vm.envOr("DURATION_SECONDS", uint256(7 days));
+		uint256 quorumCount = vm.envOr("QUORUM", uint256(10));
+
+		// Set up voting options dynamically
+		uint256 optionCount = vm.envOr("OPTION_COUNT", uint256(3));
+		string[] memory votingOptions = new string[](optionCount);
+
+		// Load options from environment variables or use defaults
+		for (uint256 i = 0; i < optionCount; i++) {
+			string memory envKey = string(abi.encodePacked("OPTION_", vm.toString(i + 1)));
+			string memory defaultValue = string(abi.encodePacked("Option ", vm.toString(i + 1)));
+			votingOptions[i] = vm.envOr(envKey, defaultValue);
+		}
+
+		// Start broadcasting transactions
 		vm.startBroadcast();
 
-		VotingFactory factory = VotingFactory(VOTING_FACTORY);
-
-		string memory name = "ETHPrague Demo Vote";
-		string memory allowedDomain = "school.edu";
-		address sponsor = msg.sender; // Replace with the actual sponsor address
-
-		(uint roundId, address verifier) = factory.createRound(
-			name,
-			allowedDomain,
-			sponsor,
-			EMAIL_PROVER
+		// Deploy the VotingRound contract
+		VotingRound votingRound = new VotingRound(
+			voteName,
+			emailDomain,
+			votingOptions,
+			durationInSeconds,
+			quorumCount
 		);
 
-		console.log("New voting round created");
-		console.log("Round ID:", roundId);
-		console.log("Verifier address:", verifier);
+		// Stop broadcasting
+		vm.stopBroadcast();
+
+		// Log deployment information
+		console.log("VotingRound deployed to:", address(votingRound));
+		console.log("Vote Name:", voteName);
+		console.log("Email Domain:", emailDomain);
+		console.log("Duration (seconds):", durationInSeconds);
+		console.log("Quorum:", quorumCount);
+		console.log("End Time:", votingRound.endTime());
+
+		console.log("Voting Options:");
+		for (uint i = 0; i < votingOptions.length; i++) {
+			console.log("  ", i, ":", votingOptions[i]);
+		}
+	}
+
+	function deployWithCustomOptions(
+		string memory _name,
+		string memory _domain,
+		string[] memory _options,
+		uint256 _durationInSeconds,
+		uint256 _quorum
+	) external {
+		vm.startBroadcast();
+
+		VotingRound votingRound = new VotingRound(
+			_name,
+			_domain,
+			_options,
+			_durationInSeconds,
+			_quorum
+		);
 
 		vm.stopBroadcast();
+
+		console.log("Custom VotingRound deployed to:", address(votingRound));
+		console.log("Vote Name:", _name);
+		console.log("Email Domain:", _domain);
+		console.log("Duration (seconds):", _durationInSeconds);
+		console.log("Quorum:", _quorum);
 	}
 }

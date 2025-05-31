@@ -2,36 +2,43 @@
 pragma solidity ^0.8.30;
 
 import "./VotingFactory.sol";
-import "./EmailAccessVerifier.sol";
+import "./VotingRound.sol";
 
+/// @title GasFaucet - Sends gas to verified voters once per round
 contract GasFaucet {
 	VotingFactory public factory;
-	uint public constant GAS_AMOUNT = 0.0001 ether;
 
-	mapping(uint => mapping(address => bool)) public hasClaimedGas;
+	uint256 public constant GAS_AMOUNT = 0.0001 ether;
 
-	event GasClaimed(uint indexed roundId, address indexed user, uint amount);
+	// roundId => user => claimed
+	mapping(uint256 => mapping(address => bool)) public hasClaimed;
+
+	event GasClaimed(uint256 indexed roundId, address indexed user, uint256 amount);
 
 	constructor(address _factory) {
 		factory = VotingFactory(_factory);
 	}
 
-	function claimGas(uint roundId, bytes32 emailHash) external {
-		require(!hasClaimedGas[roundId][msg.sender], "Already claimed");
+	/// @notice Claim gas for a specific round if not already claimed
+	function claimGas(uint256 roundId) external {
+		require(!hasClaimed[roundId][msg.sender], "Already claimed");
 
-		address verifierAddr = factory.getVerifier(roundId);
-		EmailAccessVerifier verifier = EmailAccessVerifier(verifierAddr);
+		// Get the round contract address
+		(address roundAddress, , , ) = factory.rounds(roundId);
+		VotingRound round = VotingRound(roundAddress);
 
-		require(verifier.isVerified(emailHash, msg.sender), "Not verified");
+		// Require that user has voted in that round
+		require(round.hasVoted(msg.sender), "Must vote first");
 
-		hasClaimedGas[roundId][msg.sender] = true;
+		hasClaimed[roundId][msg.sender] = true;
+
 		require(address(this).balance >= GAS_AMOUNT, "Faucet empty");
-
-		(bool sent, ) = msg.sender.call{value: GAS_AMOUNT}("");
-		require(sent, "Transfer failed");
+		(bool success, ) = msg.sender.call{value: GAS_AMOUNT}("");
+		require(success, "Gas send failed");
 
 		emit GasClaimed(roundId, msg.sender, GAS_AMOUNT);
 	}
 
+	/// @notice Allow contract to receive ETH
 	receive() external payable {}
 }

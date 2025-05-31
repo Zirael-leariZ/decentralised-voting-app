@@ -5,11 +5,13 @@ import "forge-std/Script.sol";
 import "../src/GasFaucet.sol";
 
 contract DeployFaucet is Script {
-	// Replace with the actual address of your VotingFactory contract
-	address constant FACTORY_ADDRESS = 0x0CB9D32609A1cE7E22eaA61Eba83F79aE000eAD2;
+	// Replace with your VotingFactory address
+	address constant FACTORY_ADDRESS = 0xc7eD263dDF47ABF09089613602A436F02873C5d8;
 
 	function run() external {
-		vm.startBroadcast();
+		uint256 deployerKey = vm.envUint("PRIVATE_KEY");
+
+		vm.startBroadcast(deployerKey);
 
 		GasFaucet faucet = new GasFaucet(FACTORY_ADDRESS);
 		console.log("GasFaucet deployed at:", address(faucet));
