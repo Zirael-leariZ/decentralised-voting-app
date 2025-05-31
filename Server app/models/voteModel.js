@@ -25,6 +25,10 @@ const VoteSchema = new mongoose.Schema({
     option: {
         type: String,
         required: [true, 'Vote option must be provided'],
+    },
+    expiration_date: {
+        type: Date,
+        required: [true, 'Expiration date must be provided'],
     }
 });
 

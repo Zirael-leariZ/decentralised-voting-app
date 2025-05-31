@@ -1,5 +1,6 @@
 require('dotenv').config();
 require('express-async-errors');
+require('./utilities/cronTerminateVote');
 
 const express = require('express');
 const notFoundMiddleware = require('./middleware/not-found');
@@ -10,6 +11,7 @@ const bodyParser = require('body-parser');
 const userRouter = require('./routes/userRouter');
 const voteRouter = require('./routes/voteRouter');
 const auth = require('./middleware/auth');
+
 
 const app = express();
 app.use(bodyParser.json());

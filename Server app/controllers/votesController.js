@@ -3,13 +3,13 @@ const VoteModel = require('../models/voteModel');
 const getAllVotes = async (req, res) => {
     try {
         const activeVotes = await VoteModel.find({ status: 'active' });
-        const finishedVotes = await VoteModel.find({ status: { $ne: 'active' } });
+        const completedVotes = await VoteModel.find({ status: { $ne: 'active' } });
 
         res.status(200).json({
             activeVotes,
-            finishedVotes,
+            completedVotes,
             totalActive: activeVotes.length,
-            totalFinished: finishedVotes.length
+            totalCompleted: completedVotes.length
         });
     } catch (err) {
         res.status(500).json({ msg: 'Server error', error: err.message });
@@ -38,9 +38,9 @@ const getVoteById = async (req, res) => {
 
 
 const addVote = async (req, res) => {
-    const { domain, description, option, num_participants } = req.body;
+    const { domain, description, option, num_participants, expiration_date } = req.body;
 
-    if (!domain || !description || !option || num_participants === undefined) {
+    if (!expiration_date || !domain || !description || !option || num_participants === undefined) {
         return res.status(400).json({ msg: 'Please provide all required fields.' });
     }
 
@@ -50,6 +50,7 @@ const addVote = async (req, res) => {
             description,
             option,
             num_participants,
+            expiration_date,
             status: 'active'
         });
 
