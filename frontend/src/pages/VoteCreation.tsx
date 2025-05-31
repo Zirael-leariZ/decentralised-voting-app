@@ -2,6 +2,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { ethers } from 'ethers';
+
+// 1) Import your factory ABI (make sure the path is correct)
+import factoryABI from '../../../Server app/api/abi/VotingFactory.json';
+
+// 2) Define your factory address (replace with your deployed address)
+const FACTORY_ADDRESS = "0x4D9CE0d77FB4038158F3E87c31080dE6621988b8";
 
 export default function CreateVote() {
   const [domain, setDomain] = useState('');
@@ -11,6 +18,24 @@ export default function CreateVote() {
   const [description, setDescription] = useState('');
   const navigate = useNavigate();
 
+  // --- Utility: ask MetaMask to connect and return a signer
+  async function getSigner(): Promise<ethers.Signer> {
+    if (!window.ethereum) {
+      throw new Error('MetaMask not detected');
+    }
+    const provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+    // Prompt user to connect if not already
+    await provider.send('eth_requestAccounts', []);
+    return provider.getSigner();
+  }
+
+  // --- Instantiate your VotingFactory contract with the signer
+  async function getFactoryContract(): Promise<ethers.Contract> {
+    const signer = await getSigner();
+    return new ethers.Contract(FACTORY_ADDRESS, factoryABI.abi, signer);
+  }
+
+  // --- Remove an option field (minimum 2 options remain)
   const removeOptionField = (index: number) => {
     if (options.length > 2) {
       const updated = options.filter((_, i) => i !== index);
@@ -28,28 +53,54 @@ export default function CreateVote() {
     setOptions([...options, '']);
   };
 
+  // --- Main submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Client‐side: ensure at least 2 non‐empty options
     if (options.filter(Boolean).length < 2) {
-      alert("At least two options are required.");
+      alert('At least two options are required.');
       return;
     }
 
     try {
-      const response = await axios.post('http://localhost:4000/api/v1/votes/addVote', {
+      // 3) 1st: Call your on‐chain factory.createPoll(...) function
+      //    - Adjust the method name and arguments to match your Solidity
+      //    - Here we assume the signature is createPoll(string domain, string[] options, uint256 expiration, string description)
+      //
+      const factoryContract = await getFactoryContract();
+
+      // Convert expiration date to a UNIX timestamp (in seconds)
+      const expirationTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
+
+      // Send the transaction to create a new on‐chain poll
+      const tx = await factoryContract.createPoll(
         domain,
-        "num_participants" : participants,
+        options,
+        expirationTimestamp,
+        description
+      );
+      // Optionally show a “Waiting for confirmation…” message in your UI
+      await tx.wait(); // wait until mined
+
+      // 4) If on‐chain tx succeeded, now send to your backend to store in your database
+      await axios.post('http://localhost:4000/api/v1/votes/addVote', {
+        domain,
+        num_participants: participants,
         options,
         description,
-        "expiration_date": endDate,
+        expiration_date: endDate, // keep the same date format your backend expects
       });
 
-      alert("Vote successfully created!");
+      alert('Vote successfully created on‐chain and in the database!');
       navigate('/dashboard');
     } catch (error: any) {
-      console.error('Vote creation error:', error.response?.data?.msg || error.message);
-      alert(error.response?.data?.msg || 'Failed to create vote');
+      console.error('Error during vote creation:', error);
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        (error?.response?.data?.msg ?? 'Failed to create vote');
+      alert(message);
     }
   };
 
@@ -64,7 +115,10 @@ export default function CreateVote() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="domain"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Domain
               </label>
               <input
@@ -80,7 +134,10 @@ export default function CreateVote() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Description
               </label>
               <textarea
@@ -95,7 +152,10 @@ export default function CreateVote() {
             </div>
 
             <div>
-              <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="participants"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Number of participants
               </label>
               <input
@@ -112,7 +172,9 @@ export default function CreateVote() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Options</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Options
+              </label>
               {options.map((option, index) => (
                 <div key={index} className="flex space-x-2 mb-2">
                   <input
@@ -129,7 +191,7 @@ export default function CreateVote() {
                       onClick={() => removeOptionField(index)}
                       className="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
                     >
-                      -
+                      –
                     </button>
                   )}
                   {index === options.length - 1 && (
@@ -144,21 +206,25 @@ export default function CreateVote() {
                 </div>
               ))}
             </div>
-			<div>
-			<label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-				Ending Date
-			</label>
-			<input
-				id="endDate"
-				name="endDate"
-				type="date"
-				required
-        min={new Date().toISOString().split("T")[0]}
-				value={endDate}
-				onChange={(e) => setEndDate(e.target.value)}
-				className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-			/>
-			</div>
+
+            <div>
+              <label
+                htmlFor="endDate"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Ending Date
+              </label>
+              <input
+                id="endDate"
+                name="endDate"
+                type="date"
+                required
+                min={new Date().toISOString().split('T')[0]}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
           </div>
 
           <div>
@@ -170,7 +236,10 @@ export default function CreateVote() {
             </button>
           </div>
           <div className="text-center">
-            <Link to="/dashboard" className="text-sm text-blue-600 hover:text-blue-800">
+            <Link
+              to="/dashboard"
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
               Back to dashboard
             </Link>
           </div>

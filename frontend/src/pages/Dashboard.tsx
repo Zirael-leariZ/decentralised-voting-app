@@ -35,6 +35,20 @@ export default function Dashboard() {
       });
   }, []);
 
+  // function to handle voting
+  const handleVote = async (pollId: number, option: string) => {
+    try {
+      const response = await axios.post(`/api/votes/${pollId}/vote`, { option });
+      alert('Vote casted successfully');
+      // Uodate the activeVotes state to reflect the new vote count
+      setActiveVotes(prevVotes => prevVotes.map(poll => 
+        poll.id === pollId ? { ...poll, total_votes: poll.total_votes + 1 } : poll
+      ));
+    } catch (error) {
+      alert('Error voting: ' + error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,11 +87,7 @@ export default function Dashboard() {
             
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
               {activeVotes.map((poll) => (
-                <Link 
-                  key={poll.id} 
-                  to={`/poll/${poll.id}`}
-                  className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200"
-                >
+                <div key={poll.id} className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow duration-200">
                   <div className="px-4 py-5 sm:p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -111,6 +121,17 @@ export default function Dashboard() {
                             ))}
                           </div>
                         </div>
+                        {/* Vote Button */}
+                        <div className="mt-4">
+                          {new Date(poll.expiration_date) > new Date() && (
+                            <button
+                              className="py-2 px-4 bg-blue-600 text-white rounded-md"
+                              onClick={() => handleVote(poll.id, poll.options[0])}
+                            >
+                              Vote for {poll.options[0]}
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <div className="ml-4 flex-shrink-0">
                         <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -119,7 +140,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
 

@@ -1,72 +1,67 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.30;
+pragma solidity ^0.8.0;
 
-import "./VotingRound.sol";
-
-/// @title VotingFactory - Deploys and tracks voting rounds
 contract VotingFactory {
-	struct VotingMeta {
-		address roundAddress;
-		string name;
-		string domain;
-		address sponsor;
-	}
-	
-
-	VotingMeta[] public rounds;
-
-	event NewRound(
-		uint256 indexed roundId,
-		address indexed roundAddress,
-		string name,
-		string domain,
-		address sponsor
-	);
-
-	/// @notice Create a new voting round contract
-	/// @param _name Name of the vote
-	/// @param _domain Allowed email domain
-	/// @param _options List of voting options
-	/// @param _duration Voting duration in seconds
-	/// @param _quorum Minimum number of votes required
-	/// @param _sponsor Address responsible for funding gas if needed
-	function createVotingRound(
-		string memory _name,
-		string memory _domain,
-		string[] memory _options,
-		uint256 _duration,
-		uint256 _quorum,
-		address _sponsor
-	) external returns (uint256 roundId, address roundAddress) {
-		VotingRound newRound = new VotingRound(_name, _domain, _options, _duration, _quorum);
-
-		rounds.push(
-			VotingMeta({
-				roundAddress: address(newRound),
-				name: _name,
-				domain: _domain,
-				sponsor: _sponsor
-			})
-		);
-
-		emit NewRound(rounds.length - 1, address(newRound), _name, _domain, _sponsor);
-		return (rounds.length - 1, address(newRound));
+	struct Poll {
+		uint256 id;
+		string description;
+		string[] options;
+		uint256 expirationDate;
+		address creator;
+		mapping(address => bool) hasVoted; 
+		mapping(string => uint256) votes; 
+		bool completed;
 	}
 
-	/// @notice Returns all voting round metadata
-	function getAllRounds() external view returns (VotingMeta[] memory) {
-		return rounds;
+	uint256 public pollCounter;
+	mapping(uint256 => Poll) public polls;
+
+	event PollCreated(uint256 pollId, string description, string[] options, uint256 expirationDate);
+	event VoteCasted(uint256 pollId, string option, address voter);
+
+	// Создание нового опроса
+	function createPoll(string memory _description, string[] memory _options, uint256 _duration) public {
+		pollCounter++;
+		Poll storage newPoll = polls[pollCounter];
+		newPoll.id = pollCounter;
+		newPoll.description = _description;
+		newPoll.options = _options;
+		newPoll.expirationDate = block.timestamp + _duration;
+		newPoll.creator = msg.sender;
+		newPoll.completed = false;
+
+		emit PollCreated(pollCounter, _description, _options, newPoll.expirationDate);
 	}
 
+	function vote(uint256 _pollId, string memory _option) public {
+		Poll storage poll = polls[_pollId];
 
-	/// @notice Returns round data by ID
-	function getRound(uint256 roundId) external view returns (VotingMeta memory) {
-		require(roundId < rounds.length, "Invalid round ID");
-		return rounds[roundId];
+		require(block.timestamp < poll.expirationDate, "Voting period has ended.");
+		require(!poll.hasVoted[msg.sender], "You have already voted.");
+		
+		bool validOption = false;
+		for (uint i = 0; i < poll.options.length; i++) {
+			if (keccak256(abi.encodePacked(poll.options[i])) == keccak256(abi.encodePacked(_option))) {
+				validOption = true;
+				break;
+			}
+		}
+		require(validOption, "Invalid vote option.");
+
+		poll.votes[_option]++;
+		poll.hasVoted[msg.sender] = true;
+
+		emit VoteCasted(_pollId, _option, msg.sender);
 	}
 
-	/// @notice Returns number of created rounds
-	function count() external view returns (uint256) {
-		return rounds.length;
+	// Получение результатов голосования
+	function getResults(uint256 _pollId) public view returns (string[] memory options, uint256[] memory votes) {
+		Poll storage poll = polls[_pollId];
+
+		options = poll.options;
+		votes = new uint256[](poll.options.length);
+		for (uint i = 0; i < poll.options.length; i++) {
+			votes[i] = poll.votes[poll.options[i]];
+		}
 	}
 }
