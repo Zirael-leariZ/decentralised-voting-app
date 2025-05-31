@@ -1,0 +1,37 @@
+    .wallet-connection {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 20px 0;
+    }
+
+    .connect-btn, .disconnect-btn {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    }
+
+    .connect-btn:hover, .disconnect-btn:hover {
+    background-color: #0052a3;
+    }
+
+    .connect-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    }
+
+    .wallet-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    }
+
+    .account-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    }
