@@ -9,16 +9,23 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const userRouter = require('./routes/userRouter');
 const voteRouter = require('./routes/voteRouter');
+const auth = require('./middleware/auth');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors())
 app.use(express.json());
 
+
 // Routes
 app.get('/', (req, res) => {
     res.send('<h1>Decetralised voting app</h1>');
 });
+app.get('/api/v1/users/verify', auth, (req, res) => {
+    res.json({ valid: true });
+});
+
+
 app.use('/api/v1/users/', userRouter);
 app.use('/api/v1/votes/', voteRouter);
 
