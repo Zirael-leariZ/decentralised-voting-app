@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2. Your global tweaks (optional) */
+html,
+body {
+  @apply h-full bg-background text-foreground antialiased;
+}
+
+/* Example brand link override */
+a {
+  @apply text-brand hover:underline;
+}
