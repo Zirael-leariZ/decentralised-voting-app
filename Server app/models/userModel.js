@@ -18,6 +18,8 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Attach the auto-increment plugin to the schema
-UserSchema.plugin(AutoIncrement, { inc_field: 'id' });
-
+UserSchema.plugin(AutoIncrement, { 
+    inc_field: 'id',
+    id: 'user_counter'  // Unique counter name
+});
 module.exports = mongoose.model('users', UserSchema);

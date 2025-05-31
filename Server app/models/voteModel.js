@@ -28,7 +28,8 @@ const VoteSchema = new mongoose.Schema({
     }
 });
 
-// // Attach the auto-increment plugin to the schema
-// VoteSchema.plugin(AutoIncrement, { inc_field: 'id' });
-
+VoteSchema.plugin(AutoIncrement, { 
+    inc_field: 'id',
+    id: 'vote_counter'
+});
 module.exports = mongoose.model('votes', VoteSchema);
