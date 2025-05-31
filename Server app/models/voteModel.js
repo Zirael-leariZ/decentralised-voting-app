@@ -22,9 +22,9 @@ const VoteSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Vote description must be provided'],
     },
-    option: {
-        type: String,
-        required: [true, 'Vote option must be provided'],
+    options: {
+        type: [String],
+        required: [true, 'Vote options must be provided'],
     },
     expiration_date: {
         type: Date,

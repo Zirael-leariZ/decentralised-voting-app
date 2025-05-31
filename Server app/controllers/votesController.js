@@ -38,9 +38,9 @@ const getVoteById = async (req, res) => {
 
 
 const addVote = async (req, res) => {
-    const { domain, description, option, num_participants, expiration_date } = req.body;
+    const { domain, description, options, num_participants, expiration_date } = req.body;
 
-    if (!expiration_date || !domain || !description || !option || num_participants === undefined) {
+    if (!expiration_date || !domain || !description || !options || num_participants === undefined) {
         return res.status(400).json({ msg: 'Please provide all required fields.' });
     }
 
@@ -48,7 +48,7 @@ const addVote = async (req, res) => {
         const newVote = new VoteModel({
             domain,
             description,
-            option,
+            options,
             num_participants,
             expiration_date,
             status: 'active'
