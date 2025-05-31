@@ -8,6 +8,7 @@ const connectDB = require('./db/connect');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const userRouter = require('./routes/userRouter');
+const voteRouter = require('./routes/voteRouter');
 
 const app = express();
 app.use(bodyParser.json());
@@ -19,6 +20,7 @@ app.get('/', (req, res) => {
     res.send('<h1>Decetralised voting app</h1>');
 });
 app.use('/api/v1/users/', userRouter);
+app.use('/api/v1/votes/', voteRouter);
 
 // Handling error routes
 app.use(notFoundMiddleware);

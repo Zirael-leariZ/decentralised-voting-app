@@ -21,7 +21,7 @@ const registerUser = async (req, res) => {
         user = new UserModel({ email, password: hashedPassword });
         await user.save();
         const token = generateToken(user._id);
-        res.json({ token, user: { id: user._id, email } });
+        res.status(201).json({ token, user: { id: user._id, email } });
     } catch (err) {
         res.status(500).send('Server error');
     }
