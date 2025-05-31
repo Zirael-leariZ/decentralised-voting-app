@@ -2,33 +2,33 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Mock data for demonstration
-const mockActivePolls = [
-  { id: '1', title: 'Community Governance Proposal', endDate: '2025-06-15', totalVotes: 124, options: ['Option A', 'Option B'] },
-  { id: '2', title: 'DAO Treasury Allocation', endDate: '2025-06-20', totalVotes: 89, options: ['Increase funding', 'Maintain current', 'Reduce funding'] },
-  { id: '3', title: 'Platform Feature Voting', endDate: '2025-06-18', totalVotes: 156, options: ['New UI', 'Mobile App', 'Analytics Dashboard'] },
-  { id: '4', title: 'Token Distribution Model', endDate: '2025-06-22', totalVotes: 67, options: ['Linear vesting', 'Cliff vesting', 'Hybrid model'] },
-  { id: '5', title: 'Partnership Selection', endDate: '2025-06-25', totalVotes: 45, options: ['Project Alpha', 'Project Beta', 'Project Gamma'] },
-];
-
-const mockCompletedPolls = [
-  { id: '6', title: 'Protocol Upgrade Vote', endDate: '2025-05-20', totalVotes: 210, winner: 'Upgrade v2.0', winningPercentage: 68 },
-  { id: '7', title: 'Brand Identity Selection', endDate: '2025-05-15', totalVotes: 187, winner: 'Option C', winningPercentage: 52 },
-  { id: '8', title: 'Grant Recipient Voting', endDate: '2025-05-10', totalVotes: 153, winner: 'Eco Project', winningPercentage: 45 },
-  { id: '9', title: 'Roadmap Prioritization', endDate: '2025-05-05', totalVotes: 198, winner: 'Security Features', winningPercentage: 72 },
-  { id: '10', title: 'Community Manager Election', endDate: '2025-04-28', totalVotes: 234, winner: 'Alex Johnson', winningPercentage: 61 },
-];
+interface Poll {
+  id: number;
+  description: string;
+  domain: string;
+  options: string[];
+  num_participants: number;
+  expiration_date: Date;
+  status: 'active' | 'completed';
+  __v: number;
+  total_votes: number;
+  winner: string;
+  winning_percentage: number;
+}
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
-  const [activeVotes, setActiveVotes] = useState([]);
-  const [completedVotes, setCompletedVotes] = useState([]);
+  const [activeVotes, setActiveVotes] = useState<Poll[]>([]);
+  const [completedVotes, setCompletedVotes] = useState<Poll[]>([]);
 
   useEffect(() => {
     axios.get('http://localhost:4000/api/v1/votes/getAll')
       .then(response => {
-        setActiveVotes(response.data.activeVotes);
-        setCompletedVotes(response.data.completedVotes); 
+        const active = response.data.activeVotes;
+        const completed = response.data.completedVotes;
+        
+        setActiveVotes(active);
+        setCompletedVotes(completed); 
       })
       .catch(error => {
         console.error('Error fetching data:', error);
@@ -72,7 +72,7 @@ export default function Dashboard() {
             </div>
             
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              {mockActivePolls.map((poll) => (
+              {activeVotes.map((poll) => (
                 <Link 
                   key={poll.id} 
                   to={`/poll/${poll.id}`}
@@ -81,20 +81,25 @@ export default function Dashboard() {
                   <div className="px-4 py-5 sm:p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{poll.title}</h3>
+                        <h3 className="text-lg font-medium text-gray-900">{poll.description}</h3>
                         <div className="mt-2">
                           <div className="flex items-center text-sm text-gray-500">
                             <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
-                            Ends on {poll.endDate}
+                            Ends on {new Date(poll.expiration_date).toLocaleDateString()}
                           </div>
                           <div className="mt-1 flex items-center text-sm text-gray-500">
                             <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                               <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                             </svg>
-                            {poll.totalVotes} votes
+                            {poll.num_participants} participants
+                          </div>
+                          <div className="mt-1 flex items-center text-sm text-gray-500">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              {poll.domain}
+                            </span>
                           </div>
                         </div>
                         <div className="mt-4">
@@ -117,6 +122,12 @@ export default function Dashboard() {
                 </Link>
               ))}
             </div>
+
+            {activeVotes.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No active polls available at the moment.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -131,7 +142,7 @@ export default function Dashboard() {
             </div>
             
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              {mockCompletedPolls.map((poll) => (
+              {completedVotes.map((poll) => (
                 <Link 
                   key={poll.id} 
                   to={`/results/${poll.id}`}
@@ -140,20 +151,25 @@ export default function Dashboard() {
                   <div className="px-4 py-5 sm:p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{poll.title}</h3>
+                        <h3 className="text-lg font-medium text-gray-900">{poll.description}</h3>
                         <div className="mt-2">
                           <div className="flex items-center text-sm text-gray-500">
                             <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
-                            Ended on {poll.endDate}
+                            Ended on {new Date(poll.expiration_date).toLocaleDateString()}
                           </div>
                           <div className="mt-1 flex items-center text-sm text-gray-500">
                             <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                               <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                             </svg>
-                            {poll.totalVotes} total votes
+                            {poll.total_votes} total votes
+                          </div>
+                          <div className="mt-1 flex items-center text-sm text-gray-500">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              {poll.domain}
+                            </span>
                           </div>
                         </div>
                         <div className="mt-4">
@@ -164,15 +180,19 @@ export default function Dashboard() {
                               </svg>
                             </div>
                             <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900">Winner: {poll.winner}</p>
+                              <p className="text-sm font-medium text-gray-900">
+                                Winner: {poll.winner || 'No winner determined'}
+                              </p>
                               <div className="mt-1">
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                   <div 
                                     className="bg-green-600 h-2 rounded-full" 
-                                    style={{ width: `${poll.winningPercentage}%` }}
+                                    style={{ width: `${(poll.winning_percentage * 100)}%` }}
                                   ></div>
                                 </div>
-                                <p className="mt-1 text-xs text-gray-500">{poll.winningPercentage}% of votes</p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  {(poll.winning_percentage * 100).toFixed(1)}% of votes
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -188,6 +208,13 @@ export default function Dashboard() {
                 </Link>
               ))}
             </div>
+
+            {/* Show message if no completed votes */}
+            {completedVotes.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No completed polls available.</p>
+              </div>
+            )}
           </div>
         )}
 

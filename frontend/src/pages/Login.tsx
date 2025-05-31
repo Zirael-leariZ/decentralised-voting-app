@@ -20,6 +20,10 @@ export default function Login() {
 
       const token = response.data.token;
       login(token);
+      if(response.data.token)
+        alert("Successfully logged in!");
+      else
+        alert(response.data.msg);
       navigate('/dashboard');
     } catch (err: any) {
       console.error(err.response?.data || err.message);

@@ -1,6 +1,6 @@
 // src/pages/CreateVote.tsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 export default function CreateVote() {
@@ -64,7 +64,9 @@ export default function CreateVote() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="domain" className="sr-only">Domain</label>
+              <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
+                Domain
+              </label>
               <input
                 id="domain"
                 name="domain"
@@ -73,12 +75,14 @@ export default function CreateVote() {
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Domain (e.g. company.com, national)"
+                placeholder="Enter domain (e.g. company.com, national)"
               />
             </div>
 
             <div>
-              <label htmlFor="description" className="sr-only">Description</label>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -86,12 +90,14 @@ export default function CreateVote() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Description"
+                placeholder="Enter desired description"
               />
             </div>
 
             <div>
-              <label htmlFor="participants" className="sr-only">Number of Participants</label>
+              <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
+                Number of participants
+              </label>
               <input
                 id="participants"
                 name="participants"
@@ -101,7 +107,7 @@ export default function CreateVote() {
                 value={participants}
                 onChange={(e) => setParticipants(Number(e.target.value))}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Number of Participants"
+                placeholder="Enter desired number of Participants"
               />
             </div>
 
@@ -147,6 +153,7 @@ export default function CreateVote() {
 				name="endDate"
 				type="date"
 				required
+        min={new Date().toISOString().split("T")[0]}
 				value={endDate}
 				onChange={(e) => setEndDate(e.target.value)}
 				className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -161,6 +168,11 @@ export default function CreateVote() {
             >
               Create Vote
             </button>
+          </div>
+          <div className="text-center">
+            <Link to="/dashboard" className="text-sm text-blue-600 hover:text-blue-800">
+              Back to dashboard
+            </Link>
           </div>
         </form>
       </div>
