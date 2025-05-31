@@ -5,10 +5,18 @@ import axios from 'axios';
 
 export default function CreateVote() {
   const [domain, setDomain] = useState('');
-  const [participants, setParticipants] = useState<number>(0);
+  const [participants, setParticipants] = useState<number>();
   const [options, setOptions] = useState<string[]>(['', '']);
   const [endDate, setEndDate] = useState('');
+  const [description, setDescription] = useState('');
   const navigate = useNavigate();
+
+  const removeOptionField = (index: number) => {
+    if (options.length > 2) {
+      const updated = options.filter((_, i) => i !== index);
+      setOptions(updated);
+    }
+  };
 
   const handleOptionChange = (index: number, value: string) => {
     const updated = [...options];
@@ -29,11 +37,12 @@ export default function CreateVote() {
     }
 
     try {
-      const response = await axios.post('http://localhost:4000/api/v1/votes/create', {
+      const response = await axios.post('http://localhost:4000/api/v1/votes/addVote', {
         domain,
-        participants,
+        "num_participants" : participants,
         options,
-        endDate,
+        description,
+        "expiration_date": endDate,
       });
 
       alert("Vote successfully created!");
@@ -69,6 +78,19 @@ export default function CreateVote() {
             </div>
 
             <div>
+              <label htmlFor="description" className="sr-only">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Description"
+              />
+            </div>
+
+            <div>
               <label htmlFor="participants" className="sr-only">Number of Participants</label>
               <input
                 id="participants"
@@ -95,6 +117,15 @@ export default function CreateVote() {
                     className="flex-1 px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     placeholder={`Option ${index + 1}`}
                   />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOptionField(index)}
+                      className="px-3 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
+                    >
+                      -
+                    </button>
+                  )}
                   {index === options.length - 1 && (
                     <button
                       type="button"

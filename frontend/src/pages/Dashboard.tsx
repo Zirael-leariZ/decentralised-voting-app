@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 // Mock data for demonstration
 const mockActivePolls = [
@@ -20,14 +21,19 @@ const mockCompletedPolls = [
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
-  const navigate = useNavigate();
+  const [activeVotes, setActiveVotes] = useState([]);
+  const [completedVotes, setCompletedVotes] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-    }
-  }, [navigate]);
+    axios.get('http://localhost:4000/api/v1/votes/getAll')
+      .then(response => {
+        setActiveVotes(response.data.activeVotes);
+        setCompletedVotes(response.data.completedVotes); 
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
