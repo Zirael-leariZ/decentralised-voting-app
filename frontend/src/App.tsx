@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import VoteCreation from './pages/VoteCreation';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import PrivateRoute from './providers/PrivateRoute';
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/create-poll" element={<VoteCreation />} />
 
           <Route
             path="/dashboard"
@@ -28,7 +30,7 @@ function App() {
             path="/create-poll"
             element={
               <PrivateRoute>
-                <div>Create Poll Page (Coming Soon)</div>
+                <VoteCreation />
               </PrivateRoute>
             }
           />
