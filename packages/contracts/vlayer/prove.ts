@@ -1,106 +1,39 @@
+// Load .env config (token, prover URL)
+import "dotenv/config";
+import fs from "fs/promises";
 import { createVlayerClient } from "@vlayer/sdk";
-import nftSpec from "../out/ExampleNFT.sol/ExampleNFT";
-import tokenSpec from "../out/ExampleToken.sol/ExampleToken";
-import {
-  getConfig,
-  createContext,
-  deployVlayerContracts,
-  waitForContractDeploy,
-} from "@vlayer/sdk/config";
 
-import proverSpec from "../out/SimpleProver.sol/SimpleProver";
-import verifierSpec from "../out/SimpleVerifier.sol/SimpleVerifier";
+// Load ABI for the deployed EmailAccessProver contract
+import fullAbi from "./abi/EmailAccessProver.json" assert { type: "json" };
+const proverAbi = fullAbi.abi;
 
-const config = getConfig();
-const {
-  chain,
-  ethClient,
-  account: john,
-  proverUrl,
-  confirmations,
-} = createContext(config);
+// Read .eml filepath from command line
+const filepath = process.argv[2];
+const VLAYER_TOKEN = process.env.VLAYER_TOKEN;
+const VLAYER_PROVER_URL = process.env.VLAYER_PROVER_URL;
 
-if (!john) {
-  throw new Error(
-    "No account found make sure EXAMPLES_TEST_PRIVATE_KEY is set in your environment variables",
-  );
+async function main() {
+  if (!VLAYER_TOKEN || !VLAYER_PROVER_URL) {
+    throw new Error("Missing VLAYER_TOKEN or VLAYER_PROVER_URL in .env");
+  }
+
+  const client = createVlayerClient({
+    url: VLAYER_PROVER_URL,
+    token: VLAYER_TOKEN,
+  });
+
+  const file = await fs.readFile(filepath);
+
+  // Submit proof request directly with .eml file
+  const result = await client.prove({
+    file: new Uint8Array(file),
+    chainId: 11155420, // Optimism Sepolia
+    address: "0xBa4011B617DBc8cA774dd619C55a13765B81Dd62", // Prover address
+    proverAbi,
+    functionName: "main"
+  });
+
+  console.log(JSON.stringify(result, null, 2));
 }
 
-const INITIAL_TOKEN_SUPPLY = BigInt(10_000_000);
-
-const tokenDeployTransactionHash = await ethClient.deployContract({
-  abi: tokenSpec.abi,
-  bytecode: tokenSpec.bytecode.object,
-  account: john,
-  args: [john.address, INITIAL_TOKEN_SUPPLY],
-});
-
-const tokenAddress = await waitForContractDeploy({
-  client: ethClient,
-  hash: tokenDeployTransactionHash,
-});
-
-const nftDeployTransactionHash = await ethClient.deployContract({
-  abi: nftSpec.abi,
-  bytecode: nftSpec.bytecode.object,
-  account: john,
-  args: [],
-});
-
-const nftContractAddress = await waitForContractDeploy({
-  client: ethClient,
-  hash: nftDeployTransactionHash,
-});
-
-const { prover, verifier } = await deployVlayerContracts({
-  proverSpec,
-  verifierSpec,
-  proverArgs: [tokenAddress],
-  verifierArgs: [nftContractAddress],
-});
-
-console.log("Proving...");
-const vlayer = createVlayerClient({
-  url: proverUrl,
-  token: config.token,
-});
-
-const hash = await vlayer.prove({
-  address: prover,
-  proverAbi: proverSpec.abi,
-  functionName: "balance",
-  args: [john.address],
-  chainId: chain.id,
-  gasLimit: config.gasLimit,
-});
-const result = await vlayer.waitForProvingResult({ hash });
-const [proof, owner, balance] = result;
-
-console.log("Proof result:", result);
-// Workaround for viem estimating gas with `latest` block causing future block assumptions to fail on slower chains like mainnet/sepolia
-const gas = await ethClient.estimateContractGas({
-  address: verifier,
-  abi: verifierSpec.abi,
-  functionName: "claimWhale",
-  args: [proof, owner, balance],
-  account: john,
-  blockTag: "pending",
-});
-
-const verificationHash = await ethClient.writeContract({
-  address: verifier,
-  abi: verifierSpec.abi,
-  functionName: "claimWhale",
-  args: [proof, owner, balance],
-  account: john,
-  gas,
-});
-
-const receipt = await ethClient.waitForTransactionReceipt({
-  hash: verificationHash,
-  confirmations,
-  retryCount: 60,
-  retryDelay: 1000,
-});
-
-console.log(`Verification result: ${receipt.status}`);
+main();

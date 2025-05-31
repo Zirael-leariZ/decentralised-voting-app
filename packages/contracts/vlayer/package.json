@@ -14,9 +14,10 @@
     "test-web:testnet": "echo \"No tests specified yet\""
   },
   "dependencies": {
-    "@vlayer/sdk": "1.0.2",
-    "viem": "2.27.0",
-    "@vlayer/react": "1.0.2"
+    "@vlayer/react": "1.0.2",
+    "@vlayer/sdk": "^1.0.2-nightly-20250530-3f01bfdcfb6b20d608f7bcef25f9907164ad3966",
+    "dotenv": "^16.5.0",
+    "viem": "2.27.0"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
