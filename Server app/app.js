@@ -12,8 +12,6 @@ const userRouter = require('./routes/userRouter');
 const app = express();
 app.use(bodyParser.json());
 app.use(cors())
-
-// middlewares
 app.use(express.json());
 
 // Routes

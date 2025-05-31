@@ -4,10 +4,12 @@ const AutoIncrement = require('mongoose-sequence')(mongoose);
 const UserSchema = new mongoose.Schema({
     id: {
         type: Number,
+        unique: true 
     },
-    username: {
+    email: {
         type: String,
         required: [true, 'User username must be provided'],
+        unique: true,
     },
     password: {
         type: String,
